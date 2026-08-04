@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: PersistentVolume
+
+metadata:
+  name: first-pv
+  labels:
+    name: first-pv
+
+spec:
+  capacity:
+    storage: 7Gi
+
+  accessModes:
+    - ReadWriteOnce
+
+  persistentVolumeReclaimPolicy: Delete
+
+  storageClassName: standard
+
+  hostPath:
+    path: /mnt/data
