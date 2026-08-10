@@ -1,0 +1,81 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "6.5.0"
+    }
+  }
+  required_version = ">= 1.0"
+}
+
+provider "aws" {
+  region = var.region
+}
+
+module "vpc" {
+  source = "./modules/vpc"
+
+  vpc_name           = var.vpc_name
+  vpc_cidr           = var.vpc_cidr
+  availability_zones = var.availability_zones
+  cluster_name       = var.cluster_name
+}
+
+module "iam" {
+  source = "./modules/iam"
+
+  cluster_name  = var.cluster_name
+  oidc_provider = module.eks.oidc_provider
+  region        = var.region
+  account_id    = var.account_id
+}
+
+module "sg" {
+  source = "./modules/sg"
+
+  cluster_name = var.cluster_name
+  vpc_id       = module.vpc.vpc_id
+}
+
+module "eks" {
+  source = "./modules/eks"
+
+  cluster_name              = var.cluster_name
+  cluster_role_arn          = module.iam.cluster_role_arn
+  node_role_arn             = module.iam.node_role_arn
+  subnet_ids                = concat(module.vpc.public_subnet_ids, module.vpc.private_subnet_ids)
+  private_subnet_ids        = module.vpc.private_subnet_ids
+  cluster_security_group_id = module.sg.cluster_security_group_id
+  node_security_group_id    = module.sg.node_security_group_id
+  instance_types            = var.instance_types
+  desired_capacity          = var.desired_capacity
+  max_capacity              = var.max_capacity
+  min_capacity              = var.min_capacity
+  kubernetes_version        = var.kubernetes_version
+}
+
+module "sqs-eventbridge-karpenter" {
+  source = "./modules/sqs-eventbridge-karpenter"
+
+  cluster_name = var.cluster_name
+}
+
+import {
+  to = module.iam.aws_iam_role.karpenter_cluster_role_rocketseat_cluster
+  id = "karpenter-cluster-role-rocketseat-cluster"
+}
+
+import {
+  to = module.iam.aws_iam_role.karpenter_node_role_rocketseat_cluster
+  id = "karpenter-node-role-rocketseat-cluster"
+}
+
+import {
+  to = module.iam.aws_iam_policy.external_dns_policy
+  id = "arn:aws:iam::403429280851:policy/ExternalDNSPolicy"
+}
+
+import {
+  to = module.iam.aws_iam_policy.karpenter_interruption_policy
+  id = "arn:aws:iam::403429280851:policy/karpenter-interruption-policy"
+}
