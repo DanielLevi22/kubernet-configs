@@ -1,0 +1,113 @@
+# ==========================================================
+# ROLE
+# Permite visualizar Pods dentro do namespace "default"
+# ==========================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: read-pod
+  namespace: default
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs:
+      - get    # Ver detalhes de um Pod específico
+      - list   # Listar Pods
+      - watch  # Acompanhar alterações em tempo real
+
+---
+
+# ==========================================================
+# ROLE BINDING (USUÁRIO)
+# Associa a Role "read-pod" ao usuário "company-user"
+#
+# Resultado:
+# O usuário poderá visualizar Pods apenas no namespace
+# "default".
+# ==========================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: read-pod-user-binding
+  namespace: default
+subjects:
+  - kind: User
+    name: company-user
+    apiGroup: rbac.authorization.k8s.io
+
+roleRef:
+  kind: Role
+  name: read-pod
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+# ==========================================================
+# ROLE BINDING (GRUPO)
+# Associa a Role "read-pod" ao grupo "group-company-user"
+#
+# Resultado:
+# Todos os usuários pertencentes a esse grupo poderão
+# visualizar Pods no namespace "default".
+# ==========================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: read-pod-group-binding
+  namespace: default
+subjects:
+  - kind: Group
+    name: group-company-user
+    apiGroup: rbac.authorization.k8s.io
+
+roleRef:
+  kind: Role
+  name: read-pod
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+# ==========================================================
+# CLUSTER ROLE
+# Permite visualizar Namespaces do cluster inteiro.
+#
+# Diferente da Role, a ClusterRole não está vinculada
+# a um namespace específico.
+# ==========================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: read-ns
+
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs:
+      - get   # Ver detalhes de um Namespace
+      - list  # Listar todos os Namespaces
+
+---
+
+# ==========================================================
+# CLUSTER ROLE BINDING
+# Associa a ClusterRole "read-ns" ao usuário
+# "company-user".
+#
+# Resultado:
+# O usuário poderá listar e consultar Namespaces
+# em todo o cluster.
+# ==========================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: read-ns-binding
+
+subjects:
+  - kind: User
+    name: company-user
+    apiGroup: rbac.authorization.k8s.io
+
+roleRef:
+  kind: ClusterRole
+  name: read-ns
+  apiGroup: rbac.authorization.k8s.io
