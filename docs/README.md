@@ -15,8 +15,11 @@ Atualizar este arquivo sempre que: uma spec mudar de status, uma decisão nova f
 | 05 | [payments-service](specs/05-payments-service-deploy.md) | 📝 Escrita | Depende do RabbitMQ já estar de pé (subido junto com a 04). |
 | 06 | [api-gateway](specs/06-api-gateway-deploy.md) | 📝 Escrita | Depende de 02-05 (os 4 serviços downstream). Fecha os 5 serviços de aplicação. |
 | 07 | [observability-stack](specs/07-observability-stack-deploy.md) | 📝 Escrita | Depende de 02-06 (faz scrape dos 5 serviços via DNS interno). |
+| 08 | [Namespace `marketplace`](specs/08-namespace-marketplace.md) | 📝 Escrita | **Implementar antes da 03** — inclui retrofit do `users-service` (spec 02) pra sair do `default`. Specs 03-07 já nascem no namespace novo. |
 
 Legenda: ⬜ não iniciada · 📝 spec escrita, aguardando implementação · 🚧 em implementação · ✅ implementada e validada no cluster.
+
+> Ordem de implementação real: 01 → 02 → **08** → 03 → 04 → 05 → 06 → 07. A numeração da spec reflete a ordem em que foi escrita, não necessariamente a ordem de implementação.
 
 ## Decisões arquiteturais já tomadas
 
@@ -54,9 +57,13 @@ Cada uma tem o porquê, porque é isso que evita repetir a mesma discussão daqu
 **Decisão:** `kubectl config current-context` → `docker-desktop`. Implica duas coisas usadas em todas as specs: imagem buildada localmente já é visível ao cluster (sem registry), e um pod alcança o host via `host.docker.internal`.
 **Revisitar quando:** decidir também simular em nuvem (EKS via `tf/`) — nesse caso essas duas premissas mudam (precisa de registry como ECR, e Postgres/RabbitMQ externos deixam de fazer sentido do jeito atual).
 
-### Sem Namespace dedicado, Ingress, Kustomize ou Helm
-**Decisão:** tudo no namespace `default`, `Service` sempre `ClusterIP` (acesso via `port-forward`), manifests em YAML puro repetido por serviço.
-**Por quê:** nenhum desses conceitos foi estudado ainda — a migração usa deliberadamente só o vocabulário que o `app-ts` já validava (`Deployment`/`Service`/`ConfigMap`/`Secret`/`HPA`/`PVC`).
+### ~~Sem Namespace dedicado~~ — superada pela spec 08
+**Decisão original:** tudo no namespace `default`.
+**Por que mudou:** com 5+ serviços do marketplace misturados no `default` junto com o `app-ts` (exemplo de referência) e o material de estudo de RBAC, ficou confuso de visualizar (inclusive no Lens). A spec 08 cria o namespace `marketplace`, só para os recursos do `marketplace-microservicos` — `app-ts` e o material de RBAC continuam no `default`, sem relação com o namespace novo.
+
+### Sem Ingress, Kustomize ou Helm
+**Decisão:** `Service` sempre `ClusterIP` (acesso via `port-forward`), manifests em YAML puro repetido por serviço.
+**Por quê:** nenhum desses conceitos foi estudado ainda — a migração usa deliberadamente só o vocabulário que o `app-ts` já validava (`Deployment`/`Service`/`ConfigMap`/`Secret`/`HPA`/`PVC`/`Namespace`, este último desde a spec 08).
 **Revisitar quando:** cada um for estudado. Kustomize/Helm em particular fazem mais sentido a partir da spec 03 em diante, já que os manifests dos serviços de aplicação são quase idênticos entre si — mas entrar nisso antes de aprender não vale a pena.
 
 ### Repositório de infra separado do repositório de aplicação
@@ -67,7 +74,7 @@ Cada uma tem o porquê, porque é isso que evita repetir a mesma discussão daqu
 - **Postgres e RabbitMQ pra dentro do cluster**, via `StatefulSet`, quando esse módulo for estudado.
 - **`livenessProbe`** nos 4 serviços que hoje não têm, quando existir endpoint de liveness que não dependa de infra externa.
 - **Ingress** no lugar de `port-forward` pro `api-gateway`, quando estudado — é o único candidato a exposição externa real (os outros 4 continuam internos).
-- **Namespace dedicado** (`marketplace`, por exemplo) em vez de `default`, se/quando fizer sentido isolar do resto do cluster.
 - **Kustomize ou Helm**, pra parar de copiar manualmente o mesmo Deployment/Service/HPA pra cada serviço — decisão em aberto entre os dois, ver a conversa que gerou este documento.
 - **Simulação em nuvem via EKS** (`tf/` já tem VPC/EKS/IAM/SG prontos) — muda a resposta de "imagem local" (precisa de registry) e de "Postgres/RabbitMQ externo" (`host.docker.internal` não existe em EKS).
 - **Réplicas dos 6 arquivos `.env`/segredos reais** — hoje os valores de `Secret` usados nas specs são os mesmos de desenvolvimento já usados localmente (`postgres`/`postgres`, `dev-secret-change-me`), comitados em claro nos manifests (mesmo padrão que o `app-ts` já usava). Vale revisitar gerenciamento de segredo mais sério (ex.: Sealed Secrets, External Secrets) quando isso virar tópico de estudo — hoje é aceitável por serem credenciais de curso, não de produção.
+- **`ResourceQuota`/`LimitRange`/`NetworkPolicy`** no namespace `marketplace` (criado na spec 08) — não estudados ainda, fora de escopo por enquanto.
