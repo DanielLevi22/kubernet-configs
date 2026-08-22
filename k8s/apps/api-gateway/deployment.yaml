@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: api-gateway
+  namespace: marketplace
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      api: api-gateway
+  template:
+    metadata:
+      labels:
+        api: api-gateway
+    spec:
+      containers:
+        - name: api-gateway
+          image: api-gateway:local
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: api-gateway
+            - secretRef:
+                name: jwt-secret
+          ports:
+            - containerPort: 3005
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: 3005
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 1
+            periodSeconds: 10
+            initialDelaySeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 3005
+            failureThreshold: 3
+            periodSeconds: 15
+            successThreshold: 1
+            timeoutSeconds: 1
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 3005
+            failureThreshold: 3
+            periodSeconds: 15
+            successThreshold: 1
+            timeoutSeconds: 1
+            initialDelaySeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 192Mi

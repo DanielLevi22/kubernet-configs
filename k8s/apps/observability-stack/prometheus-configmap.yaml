@@ -1,0 +1,100 @@
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: prometheus-config
+  namespace: marketplace
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    rule_files:
+      - alert.rules.yml
+
+    scrape_configs:
+      - job_name: prometheus
+        static_configs:
+          - targets: ["localhost:9090"]
+
+      - job_name: users-service
+        metrics_path: /metrics
+        static_configs:
+          - targets: ["users-service:80"]
+
+      - job_name: products-service
+        metrics_path: /metrics
+        static_configs:
+          - targets: ["products-service:80"]
+
+      - job_name: checkout-service
+        metrics_path: /metrics
+        static_configs:
+          - targets: ["checkout-service:80"]
+
+      - job_name: payments-service
+        metrics_path: /metrics
+        static_configs:
+          - targets: ["payments-service:80"]
+
+      - job_name: api-gateway
+        metrics_path: /metrics
+        static_configs:
+          - targets: ["api-gateway-scv:80"]
+  alert.rules.yml: |
+    groups:
+      - name: marketplace-alerts
+        rules:
+          - alert: ServiceDown
+            expr: up{job=~"users-service|products-service|checkout-service|payments-service|api-gateway"} == 0
+            for: 30s
+            labels:
+              severity: critical
+            annotations:
+              summary: "Serviço {{ $labels.job }} está fora do ar"
+              description: "O target {{ $labels.job }} não responde ao scrape do Prometheus há pelo menos 30s."
+
+          - alert: HighErrorRate
+            expr: sum by (job) (rate(http_requests_total{status_code=~"5.."}[5m])) / sum by (job) (rate(http_requests_total[5m])) > 0.1
+            for: 1m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Taxa de erros 5xx alta em {{ $labels.job }}"
+              description: "Mais de 10% das respostas de {{ $labels.job }} nos últimos 5 minutos são 5xx."
+
+          - alert: HighLatencyP95
+            expr: histogram_quantile(0.95, sum by (job, le) (rate(http_request_duration_seconds_bucket[5m]))) > 2
+            for: 1m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Latência P95 alta em {{ $labels.job }}"
+              description: "O P95 de duração de requisições de {{ $labels.job }} está acima de 2s nos últimos 5 minutos."
+
+          - alert: HighMemoryUsage
+            expr: process_resident_memory_bytes > 536870912
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Uso de memória alto em {{ $labels.job }}"
+              description: "O processo de {{ $labels.job }} está usando mais de 512MB de memória residente."
+
+          - alert: NoPaymentsProcessed
+            expr: increase(payments_processed_total[5m]) == 0
+            labels:
+              severity: info
+            annotations:
+              summary: "Nenhum pagamento processado nos últimos 5 minutos"
+              description: "payments_processed_total não foi incrementado nos últimos 5 minutos."
+
+          - alert: HighPaymentRejectionRate
+            expr: sum(increase(payments_rejected_total[5m])) / sum(increase(payments_processed_total[5m])) > 0.5
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Taxa de rejeição de pagamentos alta"
+              description: "Mais de 50% dos pagamentos processados nos últimos 5 minutos foram rejeitados."
