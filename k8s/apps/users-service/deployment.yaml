@@ -3,6 +3,7 @@ kind: Deployment
 
 metadata:
   name: users-service
+  namespace: marketplace
 spec:
   replicas: 3
   strategy:

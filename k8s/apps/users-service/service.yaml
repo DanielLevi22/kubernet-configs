@@ -3,6 +3,7 @@ kind: Service
 
 metadata:
   name: users-service
+  namespace: marketplace
 
 spec:
   type: ClusterIP
