@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: users-service
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      api: users-service
+  template:
+    metadata:
+      labels:
+        api: users-service
+    spec:
+      containers:
+        - name: users-service
+          image: users-service:local
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: users-service
+            - secretRef:
+                name: users-service-secrets
+            - secretRef:
+                name: jwt-secret
+          ports:
+            - containerPort: 3000
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 1
+            periodSeconds: 10
+            initialDelaySeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            failureThreshold: 3
+            periodSeconds: 15
+            successThreshold: 1
+            timeoutSeconds: 1
+            initialDelaySeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 192Mi

@@ -9,7 +9,7 @@ Atualizar este arquivo sempre que: uma spec mudar de status, uma decisão nova f
 | # | Spec | Status | Observação |
 |---|---|---|---|
 | 01 | [Organização de pastas](specs/01-organizacao-pastas-multi-servico.md) | ✅ Implementada | Aplicada e commitada (`k8s/apps/<serviço>/`, `k8s-global/rbac/`). |
-| 02 | [users-service — piloto](specs/02-users-service-deploy-piloto.md) | 📝 Escrita | Aguardando implementação (RF01 build da imagem é o próximo passo). |
+| 02 | [users-service — piloto](specs/02-users-service-deploy-piloto.md) | ✅ Implementada | Validada no cluster: pods `Ready`, `/health` 200, HPA coletando métricas. |
 | 03 | [products-service](specs/03-products-service-deploy.md) | 📝 Escrita | Depende do padrão validado na 02. |
 | 04 | [checkout-service](specs/04-checkout-service-deploy.md) | 📝 Escrita | Depende de 02 e 03 (chama `products-service` via DNS interno). |
 | 05 | [payments-service](specs/05-payments-service-deploy.md) | 📝 Escrita | Depende do RabbitMQ já estar de pé (subido junto com a 04). |
