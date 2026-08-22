@@ -10,16 +10,18 @@ Atualizar este arquivo sempre que: uma spec mudar de status, uma decisão nova f
 |---|---|---|---|
 | 01 | [Organização de pastas](specs/01-organizacao-pastas-multi-servico.md) | ✅ Implementada | Aplicada e commitada (`k8s/apps/<serviço>/`, `k8s-global/rbac/`). |
 | 02 | [users-service — piloto](specs/02-users-service-deploy-piloto.md) | ✅ Implementada | Validada no cluster: pods `Ready`, `/health` 200, HPA coletando métricas. |
-| 03 | [products-service](specs/03-products-service-deploy.md) | 📝 Escrita | Depende do padrão validado na 02. |
-| 04 | [checkout-service](specs/04-checkout-service-deploy.md) | 📝 Escrita | Depende de 02 e 03 (chama `products-service` via DNS interno). |
-| 05 | [payments-service](specs/05-payments-service-deploy.md) | 📝 Escrita | Depende do RabbitMQ já estar de pé (subido junto com a 04). |
-| 06 | [api-gateway](specs/06-api-gateway-deploy.md) | 📝 Escrita | Depende de 02-05 (os 4 serviços downstream). Fecha os 5 serviços de aplicação. |
-| 07 | [observability-stack](specs/07-observability-stack-deploy.md) | 📝 Escrita | Depende de 02-06 (faz scrape dos 5 serviços via DNS interno). |
+| 03 | [products-service](specs/03-products-service-deploy.md) | ✅ Implementada | Validada: pod `Ready`, `/health` 200. |
+| 04 | [checkout-service](specs/04-checkout-service-deploy.md) | ✅ Implementada | Validada: `/health` 200 (banco + RabbitMQ), alcança `products-service` via DNS interno. |
+| 05 | [payments-service](specs/05-payments-service-deploy.md) | ✅ Implementada | Validada: `/health` 200 (banco + RabbitMQ). |
+| 06 | [api-gateway](specs/06-api-gateway-deploy.md) | ✅ Implementada | Validada: `/health/live` sempre OK, `/health/ready` reflete status dos 4 downstream — separação liveness/readiness funcionando. |
+| 07 | [observability-stack](specs/07-observability-stack-deploy.md) | ✅ Implementada | Validada: Prometheus com 6/6 targets `up`, Grafana com os 2 dashboards provisionados. |
 | 08 | [Namespace `marketplace`](specs/08-namespace-marketplace.md) | ✅ Implementada | Namespace criado, retrofit do `users-service` e do `jwt-secret` feito — saíram do `default` e foram reaplicados no `marketplace`. Specs 03-07 já nascem no namespace novo. |
 
 Legenda: ⬜ não iniciada · 📝 spec escrita, aguardando implementação · 🚧 em implementação · ✅ implementada e validada no cluster.
 
 > Ordem de implementação real: 01 → 02 → **08** → 03 → 04 → 05 → 06 → 07. A numeração da spec reflete a ordem em que foi escrita, não necessariamente a ordem de implementação.
+
+**Todas as 8 specs estão implementadas e validadas no cluster (auditado em 2026-08-22).** Achados menores dessa auditoria, sem impacto funcional: sobraram `.gitkeep` em algumas pastas de serviço (removidos); o `Service` do `api-gateway` ficou nomeado `api-gateway-scv` (mantendo o sufixo do `app-ts`) em vez de `api-gateway` como os outros 4 serviços — inconsistente, mas inofensivo, já que nada chama o gateway via DNS interno.
 
 ## Decisões arquiteturais já tomadas
 
