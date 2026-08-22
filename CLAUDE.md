@@ -2,7 +2,7 @@
 
 Repositório de estudo de Kubernetes. Contém os manifests de infraestrutura (`k8s/`, `k8s-global/`) e o terraform de provisionamento (`tf/`) usados para rodar, em cluster, o projeto de aplicação `marketplace-microservicos` — um marketplace em microsserviços NestJS que vive em **repositório próprio** (`github.com/DanielLevi22/marketplace-microservicos`, código e specs de aplicação ficam lá, não aqui).
 
-Por ser projeto de estudo, os manifests devem usar só o que já foi estudado até o momento — hoje isso é `Deployment`, `Service`, `ConfigMap`, `Secret`, `HorizontalPodAutoscaler` e `PersistentVolumeClaim`. Não introduzir `StatefulSet`, `Ingress`, `Namespace` dedicado, Kustomize ou Helm antes de terem sido estudados e combinados explicitamente — a spec de cada atividade deve declarar isso em "Fora de Escopo" quando relevante.
+Por ser projeto de estudo, os manifests devem usar só o que já foi estudado até o momento — hoje isso é `Deployment`, `Service`, `ConfigMap`, `Secret`, `HorizontalPodAutoscaler`, `PersistentVolumeClaim` e `Namespace` (desde a spec 08, escopado ao `marketplace`). Não introduzir `StatefulSet`, `Ingress`, Kustomize ou Helm antes de terem sido estudados e combinados explicitamente — a spec de cada atividade deve declarar isso em "Fora de Escopo" quando relevante.
 
 ## Estrutura
 
@@ -26,4 +26,5 @@ Mesma disciplina do projeto de aplicação, adaptada para manifests de infra:
 - Nomes de pasta por serviço seguem exatamente os nomes usados no `marketplace-microservicos` (`users-service`, `products-service`, etc.).
 - Probes de `Deployment` reaproveitam os endpoints que cada serviço NestJS já expõe (`/health`, `/health/live`), no mesmo padrão de `startupProbe`/`readinessProbe`/`livenessProbe` já usado no `app-ts`.
 - `JWT_SECRET` é compartilhado entre os serviços de aplicação (`api-gateway`, `users-service`, `checkout-service`, `payments-service`) — um único `Secret`, referenciado no `envFrom` de cada `Deployment`, não duplicado por serviço.
-- Sem namespace dedicado por enquanto — tudo no namespace `default`, igual ao `app-ts` hoje.
+- Recursos do `marketplace-microservicos` (`k8s/apps/<serviço>/` e `k8s/shared/`) declaram `metadata.namespace: marketplace` explicitamente em cada manifest. `app-ts` e `k8s-global/rbac/` continuam sem namespace declarado (== `default`), sem relação com o namespace `marketplace`.
+- Conveniência local (não versionada): `kubectl config set-context --current --namespace=marketplace` evita digitar `-n marketplace` em todo comando do dia a dia e faz o Lens abrir focado nesse namespace.

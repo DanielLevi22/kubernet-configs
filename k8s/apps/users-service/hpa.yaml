@@ -3,6 +3,7 @@ kind: HorizontalPodAutoscaler
 
 metadata:
   name: users-service-hpa
+  namespace: marketplace
 
 spec:
   scaleTargetRef:

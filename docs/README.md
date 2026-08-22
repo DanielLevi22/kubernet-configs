@@ -15,7 +15,7 @@ Atualizar este arquivo sempre que: uma spec mudar de status, uma decisão nova f
 | 05 | [payments-service](specs/05-payments-service-deploy.md) | 📝 Escrita | Depende do RabbitMQ já estar de pé (subido junto com a 04). |
 | 06 | [api-gateway](specs/06-api-gateway-deploy.md) | 📝 Escrita | Depende de 02-05 (os 4 serviços downstream). Fecha os 5 serviços de aplicação. |
 | 07 | [observability-stack](specs/07-observability-stack-deploy.md) | 📝 Escrita | Depende de 02-06 (faz scrape dos 5 serviços via DNS interno). |
-| 08 | [Namespace `marketplace`](specs/08-namespace-marketplace.md) | 📝 Escrita | **Implementar antes da 03** — inclui retrofit do `users-service` (spec 02) pra sair do `default`. Specs 03-07 já nascem no namespace novo. |
+| 08 | [Namespace `marketplace`](specs/08-namespace-marketplace.md) | ✅ Implementada | Namespace criado, retrofit do `users-service` e do `jwt-secret` feito — saíram do `default` e foram reaplicados no `marketplace`. Specs 03-07 já nascem no namespace novo. |
 
 Legenda: ⬜ não iniciada · 📝 spec escrita, aguardando implementação · 🚧 em implementação · ✅ implementada e validada no cluster.
 
