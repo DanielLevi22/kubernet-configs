@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: api-gateway
+  namespace: marketplace
+data:
+  PORT: "3005"
+  USERS_SERVICE_URL: http://users-service
+  PRODUCTS_SERVICE_URL: http://products-service
+  CHECKOUT_SERVICE_URL: http://checkout-service
+  PAYMENTS_SERVICE_URL: http://payments-service
+  CORS_ORIGIN: "*"

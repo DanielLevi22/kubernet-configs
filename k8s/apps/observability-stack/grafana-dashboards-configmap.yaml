@@ -1,0 +1,327 @@
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: grafana-dashboards
+  namespace: marketplace
+data:
+  marketplace-overview.json: |
+    {
+      "uid": "marketplace-overview",
+      "title": "Marketplace Overview",
+      "tags": ["marketplace"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "15s",
+      "time": { "from": "now-1h", "to": "now" },
+      "panels": [
+        {
+          "id": 1,
+          "title": "Status dos servicos",
+          "type": "stat",
+          "datasource": "Prometheus",
+          "gridPos": { "x": 0, "y": 0, "w": 24, "h": 4 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "up{job=~\"users-service|products-service|checkout-service|payments-service|api-gateway\"}",
+              "legendFormat": "{{job}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" } } },
+                { "type": "value", "options": { "1": { "text": "UP", "color": "green" } } }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "green", "value": 1 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+            "orientation": "horizontal",
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value_and_name"
+          }
+        },
+        {
+          "id": 2,
+          "title": "Throughput geral (req/s)",
+          "type": "timeseries",
+          "datasource": "Prometheus",
+          "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (job) (rate(http_requests_total[1m]))",
+              "legendFormat": "{{job}}"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+        },
+        {
+          "id": 3,
+          "title": "Taxa de erros 4xx/5xx",
+          "type": "timeseries",
+          "datasource": "Prometheus",
+          "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (job) (rate(http_requests_total{status_code=~\"4..|5..\"}[5m])) / sum by (job) (rate(http_requests_total[5m]))",
+              "legendFormat": "{{job}}"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] }
+        },
+        {
+          "id": 4,
+          "title": "Latencia P95 por servico",
+          "type": "timeseries",
+          "datasource": "Prometheus",
+          "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "histogram_quantile(0.95, sum by (job, le) (rate(http_request_duration_seconds_bucket[5m])))",
+              "legendFormat": "{{job}}"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+        },
+        {
+          "id": 5,
+          "title": "Memoria por servico",
+          "type": "timeseries",
+          "datasource": "Prometheus",
+          "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "process_resident_memory_bytes",
+              "legendFormat": "{{job}}"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] }
+        },
+        {
+          "id": 6,
+          "title": "Pagamentos aprovados x rejeitados",
+          "type": "timeseries",
+          "datasource": "Prometheus",
+          "gridPos": { "x": 0, "y": 20, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "rate(payments_approved_total[5m])",
+              "legendFormat": "Aprovados"
+            },
+            {
+              "refId": "B",
+              "expr": "rate(payments_rejected_total[5m])",
+              "legendFormat": "Rejeitados"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+        },
+        {
+          "id": 7,
+          "title": "Pedidos criados (ultima 1h)",
+          "type": "stat",
+          "datasource": "Prometheus",
+          "gridPos": { "x": 12, "y": 20, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "increase(orders_created_total[1h])"
+            }
+          ],
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+            "colorMode": "value",
+            "graphMode": "area",
+            "textMode": "value"
+          }
+        },
+        {
+          "id": 8,
+          "title": "Alertas Ativos",
+          "type": "table",
+          "datasource": "Prometheus",
+          "gridPos": { "x": 0, "y": 28, "w": 24, "h": 8 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "ALERTS{alertstate=\"firing\"}",
+              "instant": true,
+              "format": "table"
+            }
+          ]
+        }
+      ]
+    }
+  service-details.json: |
+    {
+      "uid": "service-details",
+      "title": "Service Details",
+      "tags": ["marketplace"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "15s",
+      "time": { "from": "now-1h", "to": "now" },
+      "templating": {
+        "list": [
+          {
+            "name": "service",
+            "type": "query",
+            "datasource": "Prometheus",
+            "query": "label_values(up, job)",
+            "refresh": 1,
+            "includeAll": false,
+            "multi": false,
+            "current": {}
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "title": "Rate (req/s) por rota",
+          "type": "timeseries",
+          "datasource": "Prometheus",
+          "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (route) (rate(http_requests_total{job=~\"$service\"}[5m]))",
+              "legendFormat": "{{route}}"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+        },
+        {
+          "id": 2,
+          "title": "Errors (%) por rota",
+          "type": "timeseries",
+          "datasource": "Prometheus",
+          "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (route) (rate(http_requests_total{job=~\"$service\", status_code=~\"4..|5..\"}[5m])) / sum by (route) (rate(http_requests_total{job=~\"$service\"}[5m]))",
+              "legendFormat": "{{route}}"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] }
+        },
+        {
+          "id": 3,
+          "title": "Duration P50/P95/P99",
+          "type": "timeseries",
+          "datasource": "Prometheus",
+          "gridPos": { "x": 0, "y": 8, "w": 24, "h": 8 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "histogram_quantile(0.50, sum by (le, route) (rate(http_request_duration_seconds_bucket{job=~\"$service\"}[5m])))",
+              "legendFormat": "p50 {{route}}"
+            },
+            {
+              "refId": "B",
+              "expr": "histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_seconds_bucket{job=~\"$service\"}[5m])))",
+              "legendFormat": "p95 {{route}}"
+            },
+            {
+              "refId": "C",
+              "expr": "histogram_quantile(0.99, sum by (le, route) (rate(http_request_duration_seconds_bucket{job=~\"$service\"}[5m])))",
+              "legendFormat": "p99 {{route}}"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+        },
+        {
+          "id": 4,
+          "title": "Top rotas por volume",
+          "type": "table",
+          "datasource": "Prometheus",
+          "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "topk(10, sum by (route) (rate(http_requests_total{job=~\"$service\"}[5m])))",
+              "instant": true,
+              "format": "table"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "title": "Distribuicao de status codes",
+          "type": "piechart",
+          "datasource": "Prometheus",
+          "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (status_code) (increase(http_requests_total{job=~\"$service\"}[1h]))",
+              "legendFormat": "{{status_code}}",
+              "instant": true
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "title": "CPU do processo",
+          "type": "timeseries",
+          "datasource": "Prometheus",
+          "gridPos": { "x": 0, "y": 24, "w": 8, "h": 8 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "rate(process_cpu_seconds_total{job=~\"$service\"}[5m])",
+              "legendFormat": "cpu"
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "title": "Memoria do processo",
+          "type": "timeseries",
+          "datasource": "Prometheus",
+          "gridPos": { "x": 8, "y": 24, "w": 8, "h": 8 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "process_resident_memory_bytes{job=~\"$service\"}",
+              "legendFormat": "memoria"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] }
+        },
+        {
+          "id": 8,
+          "title": "Event loop lag",
+          "type": "timeseries",
+          "datasource": "Prometheus",
+          "gridPos": { "x": 16, "y": 24, "w": 8, "h": 8 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "nodejs_eventloop_lag_seconds{job=~\"$service\"}",
+              "legendFormat": "event loop lag"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+        }
+      ]
+    }
